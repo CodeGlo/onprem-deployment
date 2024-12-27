@@ -7,7 +7,7 @@ services:
   web: 
     container_name: web
     image: odin/web:test1
-    # restart: unless-stopped
+    restart: unless-stopped
     ports:
       - 3000:3000
     expose:
@@ -20,82 +20,134 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    networks:
-      - odin_master_network
-  server: 
-    container_name: server
+    depends_on:
+      - studio
+  # server services
+  fastapi_backend: 
+    container_name: fastapi_backend
     image: odin/server:test1
-    # restart: unless-stopped
+    restart: unless-stopped
     ports:
       - 8001:8001
     expose:
       - 8001
     env_file:
       - ./.env.server
-    networks:
-      - odin_master_network
-  socket: 
-    container_name: socket
+    depends_on:
+      - studio
+      - redis
+      - rabbitmq
+  redis:
+    image: redis:6.0.7
+    container_name: redis
+    restart: always
+    volumes:
+      - redis_volume_data:/data
+    ports:
+      - 6379:6379
+    depends_on:
+      - studio
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    depends_on:
+      - studio
+  celery_worker:
+    image: odin/server:test1
+    deploy:
+      mode: replicated
+      # replicas: 4
+      replicas: 1
+    restart: always
+    depends_on:
+      - studio
+      - redis
+      - rabbitmq
+    command: celery -A celery_worker worker -P threads --loglevel=info
+  
+  socket-server: 
+    container_name: socket-server
     image: odin/socket:test1
-    # restart: unless-stopped
+    restart: unless-stopped
     ports:
       - 1234:1234
     expose:
       - 1234
     env_file:
       - ./.env.socket
-    networks:
-      - odin_master_network
+    depends_on:
+      - studio
   nginx:
     image: odin/nginx:test1
     container_name: nginx
     ports:
         - "443:443"
         - "80:80"
-    env_file: .env.nginx
+    env_file: ./.env.nginx
     restart: always
-    networks:
-      - odin_master_network
-  # supabase
-  studio:
-    networks:
-      - odin_master_network
-  kong:
-    networks:
-      - odin_master_network
-  auth:
-    networks:
-      - odin_master_network
-  rest:
-    networks:
-      - odin_master_network
-  realtime:
-    networks:
-      - odin_master_network
-  storage:
-    networks:
-      - odin_master_network
-  imgproxy:
-    networks:
-      - odin_master_network
-  meta:
-    networks:
-      - odin_master_network
-  functions:
-    networks:
-      - odin_master_network
-  analytics:
-    networks:
-      - odin_master_network
-  db:
-    networks:
-      - odin_master_network
-  vector:
-    networks:
-      - odin_master_network
+    depends_on:
+      - web
+      - fastapi_backend
+      - socket-server
+      - automator
+  automator:
+    # image: 'automator-sep:latest'
+    image: odin/automator:test1
+    container_name: automator
+    restart: always
+    ports:
+      - '8002:80'
+    expose:
+      - '8002'
+    depends_on:
+      - postgres_automator
+      - redis_automator
+    env_file: ./.env.automator
+
+  postgres_automator:
+    image: 'postgres:14.4'
+    container_name: postgres_automator
+    ports:
+      - "5433:5433"
+    expose:
+      - "5433"
+    command: -p 5433
+    restart: unless-stopped
+    env_file: ./.env.automator
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis_automator:
+    image: 'redis:7.0.7'
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-p", "6380", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    container_name: redis_automator
+    command: --port 6380
+    ports:
+      - "6380:6380"
+    expose:
+      - "6380"
+    restart: unless-stopped
+    volumes:
+      - 'redis_data:/data'
+
+volumes:
+  pg_data:
+  redis_data:
+  redis_volume_data:
 
 networks:
   default:
     name: odin_master_network
-
+    driver: bridge
   
