@@ -1,0 +1,101 @@
+name: odin
+
+include:
+  - path: ./supabase/docker/docker-compose.yml
+
+services:
+  web: 
+    container_name: web
+    image: odin/web:test1
+    # restart: unless-stopped
+    ports:
+      - 3000:3000
+    expose:
+      - 3000
+    env_file:
+      - ./.env.web
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - odin_master_network
+  server: 
+    container_name: server
+    image: odin/server:test1
+    # restart: unless-stopped
+    ports:
+      - 8001:8001
+    expose:
+      - 8001
+    env_file:
+      - ./.env.server
+    networks:
+      - odin_master_network
+  socket: 
+    container_name: socket
+    image: odin/socket:test1
+    # restart: unless-stopped
+    ports:
+      - 1234:1234
+    expose:
+      - 1234
+    env_file:
+      - ./.env.socket
+    networks:
+      - odin_master_network
+  nginx:
+    image: odin/nginx:test1
+    container_name: nginx
+    ports:
+        - "443:443"
+        - "80:80"
+    env_file: .env.nginx
+    restart: always
+    networks:
+      - odin_master_network
+  # supabase
+  studio:
+    networks:
+      - odin_master_network
+  kong:
+    networks:
+      - odin_master_network
+  auth:
+    networks:
+      - odin_master_network
+  rest:
+    networks:
+      - odin_master_network
+  realtime:
+    networks:
+      - odin_master_network
+  storage:
+    networks:
+      - odin_master_network
+  imgproxy:
+    networks:
+      - odin_master_network
+  meta:
+    networks:
+      - odin_master_network
+  functions:
+    networks:
+      - odin_master_network
+  analytics:
+    networks:
+      - odin_master_network
+  db:
+    networks:
+      - odin_master_network
+  vector:
+    networks:
+      - odin_master_network
+
+networks:
+  default:
+    name: odin_master_network
+
+  
