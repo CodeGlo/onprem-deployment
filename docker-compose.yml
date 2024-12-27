@@ -6,7 +6,7 @@ include:
 services:
   web: 
     container_name: web
-    image: odin/web:test1
+    image: onerealmai/web:test1
     restart: unless-stopped
     ports:
       - 3000:3000
@@ -25,7 +25,7 @@ services:
   # server services
   fastapi_backend: 
     container_name: fastapi_backend
-    image: odin/server:test1
+    image: onerealmai/server:test1
     restart: unless-stopped
     ports:
       - 8001:8001
@@ -60,7 +60,7 @@ services:
     depends_on:
       - studio
   celery_worker:
-    image: odin/server:test1
+    image: onerealmai/server:test1
     deploy:
       mode: replicated
       # replicas: 4
@@ -74,7 +74,7 @@ services:
   
   socket-server: 
     container_name: socket-server
-    image: odin/socket:test1
+    image: onerealmai/socket:test1
     restart: unless-stopped
     ports:
       - 1234:1234
@@ -85,7 +85,7 @@ services:
     depends_on:
       - studio
   nginx:
-    image: odin/nginx:test1
+    image: onerealmai/nginx:test1
     container_name: nginx
     ports:
         - "443:443"
@@ -99,7 +99,7 @@ services:
       - automator
   automator:
     # image: 'automator-sep:latest'
-    image: odin/automator:test1
+    image: onerealmai/automator:test1
     container_name: automator
     restart: always
     ports:
@@ -148,6 +148,6 @@ volumes:
 
 networks:
   default:
-    name: odin_master_network
+    name: onerealmai_master_network
     driver: bridge
   
