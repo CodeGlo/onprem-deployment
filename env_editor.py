@@ -23,6 +23,9 @@ def load_env_file(env_path):
 
 def save_env_file(env_dict, env_path, notify=True):
     """Save environment variables to .env file"""
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(env_path), exist_ok=True)
+    
     with open(env_path, 'w') as f:
         for key, value in env_dict.items():
             f.write(f"{key}={value}\n")
@@ -33,20 +36,31 @@ def save_env_file(env_dict, env_path, notify=True):
 def save_all_env_files(env_vars_dict):
     """Save all environment files"""
     for template_file, env_vars in env_vars_dict.items():
-        output_file = os.path.join(".", template_file.replace('.template', ''))
+        if template_file == '.env.supabase':
+            output_file = os.path.join("supabase/docker/.env")
+        else:
+            output_file = os.path.join(".", template_file.replace('.template', ''))
         save_env_file(env_vars, output_file, notify=False)
 
 def load_all_env_files(template_files, from_templates=False):
     """Load all environment files"""
     env_vars_dict = {}
-    for template_file in template_files:
-        if from_templates:
-            source_path = os.path.join("env_templates", template_file)
+    for file_type, template_file in template_files:
+        if file_type == 'supabase':
+            if from_templates:
+                source_path = "supabase/docker/.env.example"
+            else:
+                source_path = "supabase/docker/.env"
+                if not os.path.exists(source_path):
+                    source_path = "supabase/docker/.env.example"
         else:
-            source_path = os.path.join(".", template_file.replace('.template', ''))
-            if not os.path.exists(source_path):
-                # If .env doesn't exist, fall back to template
+            if from_templates:
                 source_path = os.path.join("env_templates", template_file)
+            else:
+                source_path = os.path.join(".", template_file.replace('.template', ''))
+                if not os.path.exists(source_path):
+                    source_path = os.path.join("env_templates", template_file)
+        
         env_vars_dict[template_file] = load_env_file(source_path)
     return env_vars_dict
 
@@ -92,14 +106,22 @@ def find_docker_compose_files():
     return sorted(compose_files, key=lambda x: x['filename'])
 
 def get_env_templates():
-    """Get all env template files"""
-    template_dir = "env_templates"
+    """Get all env template files and special env files"""
     template_files = []
+    
+    # Get regular template files
+    template_dir = "env_templates"
     if os.path.exists(template_dir):
         for file in os.listdir(template_dir):
             if file.endswith('.template'):
-                template_files.append(file)
-    return sorted(template_files)
+                template_files.append(('regular', file))
+    
+    # Add Supabase env file
+    supabase_template = "supabase/docker/.env.example"
+    if os.path.exists(supabase_template):
+        template_files.append(('supabase', '.env.supabase'))
+    
+    return sorted(template_files, key=lambda x: x[1])
 
 def main():
     st.title("Environment Variables Editor")
@@ -135,13 +157,21 @@ def main():
     st.divider()
     
     # Create a tab for each template file
-    tabs = st.tabs([f.replace('.template', '').replace('.env.', '').capitalize() for f in template_files])
+    tabs = st.tabs([
+        "Supabase" if f == '.env.supabase' 
+        else f.replace('.template', '').replace('.env.', '').capitalize() 
+        for _, f in template_files
+    ])
     
     # Process each template file in its own tab
-    for tab, template_file in zip(tabs, template_files):
+    for tab, (file_type, template_file) in zip(tabs, template_files):
         with tab:
-            template_path = os.path.join("env_templates", template_file)
-            output_file = os.path.join(".", template_file.replace('.template', ''))
+            if file_type == 'supabase':
+                template_path = "supabase/docker/.env.example"
+                output_file = "supabase/docker/.env"
+            else:
+                template_path = os.path.join("env_templates", template_file)
+                output_file = os.path.join(".", template_file.replace('.template', ''))
             
             # Load existing env file if it exists, otherwise load from template
             if template_file not in st.session_state.env_vars_dict:
@@ -152,7 +182,8 @@ def main():
                 st.session_state.env_vars_dict[template_file] = env_vars
             
             # Display all environment variables for this file
-            st.header(f"Configuration for {template_file.replace('.template', '').replace('.env.', '').capitalize()}")
+            title = "Supabase Configuration" if file_type == 'supabase' else f"Configuration for {template_file.replace('.template', '').replace('.env.', '').capitalize()}"
+            st.header(title)
             
             # Create input fields for each environment variable
             updated_vars = {}
