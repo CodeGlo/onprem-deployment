@@ -1,1 +1,8 @@
 !.env.*.template
+.env.automator
+.env.web
+.env.socket
+.env.server
+.env.nginx
+.env.automatorFE
+__pycache__/
