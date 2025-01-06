@@ -2,7 +2,7 @@
 
 
 # Copy the environment file
-cp ./env_templates/.env.supabase ./supabase/docker/.env
+cp ./env_templates/.env.supabase.template ./supabase/docker/.env
 
 # Check if the copy was successful
 if [ $? -eq 0 ]; then
