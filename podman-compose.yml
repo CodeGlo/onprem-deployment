@@ -1,10 +1,10 @@
 name: odin
 
 include:
-  - path: ./supabase/docker/docker-compose.yml
+  - path: ./supabase/docker/podman-compose.yml
 
 services:
-  web: 
+  web:
     container_name: web
     image: onerealmai/web:test1
     restart: unless-stopped
@@ -22,8 +22,8 @@ services:
       start_period: 30s
     depends_on:
       - studio
-  # server services
-  fastapi_backend: 
+
+  fastapi_backend:
     container_name: fastapi_backend
     image: onerealmai/server:test1
     restart: unless-stopped
@@ -37,6 +37,7 @@ services:
       - studio
       - redis
       - rabbitmq
+
   redis:
     image: redis:6.0.7
     container_name: redis
@@ -47,6 +48,7 @@ services:
       - 6379:6379
     depends_on:
       - studio
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -59,11 +61,11 @@ services:
       RABBITMQ_DEFAULT_PASS: password
     depends_on:
       - studio
+
   celery_worker:
     image: onerealmai/server:test1
     deploy:
       mode: replicated
-      # replicas: 4
       replicas: 1
     restart: always
     depends_on:
@@ -71,8 +73,8 @@ services:
       - redis
       - rabbitmq
     command: celery -A celery_worker worker -P threads --loglevel=info
-  
-  socket-server: 
+
+  socket-server:
     container_name: socket-server
     image: onerealmai/socket:test1
     restart: unless-stopped
@@ -84,12 +86,13 @@ services:
       - ./.env.socket
     depends_on:
       - studio
+
   nginx:
     image: onerealmai/nginx:test1
     container_name: nginx
     ports:
-        - "443:443"
-        - "80:80"
+      - "443:443"
+      - "80:80"
     env_file: ./.env.nginx
     restart: always
     depends_on:
@@ -97,29 +100,25 @@ services:
       - fastapi_backend
       - socket-server
       - automator
+
   automator:
-    # image: 'automator-sep:latest'
     image: onerealmai/automator:test1
     container_name: automator
     restart: always
     ports:
-      - '8002:80'
-    # expose:
-    #   - '8002'
+      - "8002:80"
     depends_on:
       - postgres_automator
       - redis_automator
-    env_file: 
+    env_file:
       - ./.env.automator
       - ./.env.automatorFE
 
   postgres_automator:
-    image: 'postgres:14.4'
+    image: "postgres:14.4"
     container_name: postgres_automator
     ports:
       - "5433:5433"
-    # expose:
-    #   - "5433"
     command: -p 5433
     restart: unless-stopped
     env_file: ./.env.automator
@@ -127,9 +126,9 @@ services:
       - pg_automator_data:/var/lib/postgresql/data
 
   redis_automator:
-    image: 'redis:7.0.7'
+    image: "redis:7.0.7"
     healthcheck:
-      test: [ "CMD", "redis-cli", "-p", "6380", "ping" ]
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -141,7 +140,7 @@ services:
       - "6380"
     restart: unless-stopped
     volumes:
-      - 'redis_data:/data'
+      - "redis_data:/data"
 
 volumes:
   pg_automator_data:
@@ -152,4 +151,3 @@ networks:
   default:
     name: onerealmai_master_network
     driver: bridge
-  

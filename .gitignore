@@ -1,2 +1,10 @@
-.env.*
 !.env.*.template
+.env.automator
+.env.web
+.env.socket
+.env.server
+.env.nginx
+.env.automatorFE
+__pycache__/
+
+.codegpt
