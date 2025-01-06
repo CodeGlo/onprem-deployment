@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  env_editor:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      - ./supabase/docker/.env:/app/supabase/docker/.env
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    networks:
+      - onerealmai_master_network
+
+networks:
+  onerealmai_master_network:
+    external: true 
