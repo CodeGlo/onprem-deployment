@@ -4,7 +4,7 @@ include:
   - path: ./supabase/docker/docker-compose.yml
 
 services:
-  web: 
+  web:
     container_name: web
     image: onerealmai/web:test1
     restart: unless-stopped
@@ -15,7 +15,7 @@ services:
     env_file:
       - ./.env.web
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3000" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -23,7 +23,7 @@ services:
     depends_on:
       - studio
   # server services
-  fastapi_backend: 
+  fastapi_backend:
     container_name: fastapi_backend
     image: onerealmai/server:test1
     restart: unless-stopped
@@ -71,8 +71,8 @@ services:
       - redis
       - rabbitmq
     command: celery -A celery_worker worker -P threads --loglevel=info
-  
-  socket-server: 
+
+  socket-server:
     container_name: socket-server
     image: onerealmai/socket:test1
     restart: unless-stopped
@@ -88,10 +88,12 @@ services:
     image: onerealmai/nginx:test1
     container_name: nginx
     ports:
-        - "443:443"
-        - "80:80"
+      - "443:443"
+      - "80:80"
     env_file: ./.env.nginx
     restart: always
+    volumes:
+      - ./ssl:/ssl
     depends_on:
       - web
       - fastapi_backend
@@ -109,7 +111,7 @@ services:
     depends_on:
       - postgres_automator
       - redis_automator
-    env_file: 
+    env_file:
       - ./.env.automator
       - ./.env.automatorFE
 
@@ -148,8 +150,8 @@ volumes:
   redis_data:
   redis_volume_data:
 
+
 networks:
   default:
     name: onerealmai_master_network
     driver: bridge
-  

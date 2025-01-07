@@ -13,9 +13,9 @@ services:
     environment:
       - PYTHONPATH=/app
     restart: unless-stopped
-    networks:
-      - onerealmai_master_network
+    # networks:
+    #   - onerealmai_master_network
 
-networks:
-  onerealmai_master_network:
-    external: true 
+    # networks:
+    #   onerealmai_master_network:
+    #     external: true 
