@@ -17,4 +17,8 @@
 
 ## Startup
 
-`docker compose up -d`
+1. `docker compose up -d`
+
+## DB Setup
+
+1. run `bash bash/run_migration.sh`
